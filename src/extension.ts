@@ -2,15 +2,22 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 
-// Function to read JSON file and extract object
-function readJsonAndExtractObject(filename: string): any {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) {
-    throw new Error("No workspace is open");
-  }
+function writeToJSONFile(
+  context: vscode.ExtensionContext,
+  object: object,
+  filename: string
+) {
+  fs.writeFileSync(
+    path.join(context.extensionUri.fsPath, filename),
+    JSON.stringify(object)
+  );
+}
 
-  const workspaceFolder = workspaceFolders[0].uri.fsPath;
-  const filePath = path.join(workspaceFolder, filename);
+function readJsonAndExtractObject(
+  context: vscode.ExtensionContext,
+  filename: string
+): any {
+  const filePath = path.join(context.extensionUri.fsPath, filename);
   if (!fs.existsSync(filePath)) {
     throw new Error(`File ${filePath} does not exist`);
   }
@@ -19,8 +26,12 @@ function readJsonAndExtractObject(filename: string): any {
   return JSON.parse(fileContent);
 }
 
-function getConfig() {
-  return readJsonAndExtractObject("config.json");
+function getConfig(context: vscode.ExtensionContext) {
+  return readJsonAndExtractObject(context, "config.json");
+}
+
+function addToConfig(context: vscode.ExtensionContext, newIfo: object) {
+  writeToJSONFile(context, { info: newIfo }, "config.json");
 }
 
 function restartWebView(panel: vscode.WebviewPanel, getContent: () => string) {
@@ -83,7 +94,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
       );
 
-      let info: string[] = ["koko"];
+      let info = getConfig(context).info;
       panel.webview.html = getWebviewContent(context.extensionUri, info);
 
       panel.webview.onDidReceiveMessage(
@@ -91,23 +102,27 @@ export function activate(context: vscode.ExtensionContext) {
           switch (message.command) {
             case "saveAndReload":
               restartWebView(panel, () =>
-                getWebviewContent(context.extensionUri, info)
+                getWebviewContent(context.extensionUri, getConfig(context).info)
               );
               return;
 
             case "new_info":
               vscode.window.showInformationMessage(message.text);
-              info.push(...message.text_arr); // update info with retrieved text
+              info.push(...message.text);
               restartWebView(panel, () =>
                 getWebviewContent(context.extensionUri, info)
               );
+
               return;
 
             case "retrieveText":
-              vscode.window.showInformationMessage(
-                `Retrieved text: ${message.textArray.join(", ")}`
+              vscode.window.showInformationMessage(message.text);
+              info.push(...message.textArray);
+              addToConfig(context, info);
+              restartWebView(panel, () =>
+                getWebviewContent(context.extensionUri, getConfig(context).info)
               );
-              info = message.textArray; // update info with retrieved text
+
               return;
           }
         },
@@ -166,8 +181,8 @@ function getWebviewContent(
           });
 
           vscode.postMessage({
-            command: 'new_info',
-            text_arr: textArray
+            command: 'retrieveText',
+            textArray: textArray
           });
         }
       </script>
