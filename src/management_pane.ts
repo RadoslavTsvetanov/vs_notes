@@ -1,7 +1,10 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
+import { writeToJSONFile } from "./utils/config_interacter";
+import { PattrenType, Pattern, JSON_CONFIG, Entry } from "./utils/types";
 
+// Parse message to extract Entry object
 function parseMsg(message: {
   command: string;
   note: string;
@@ -10,7 +13,7 @@ function parseMsg(message: {
   scope: string;
   text: string;
   pattern: string;
-}) {
+}): Entry {
   return {
     note: message.note,
     scope: message.scope.split(",").map((s: string) => s.trim()),
@@ -20,34 +23,8 @@ function parseMsg(message: {
     },
   };
 }
-enum PattrenType {
-  regex = "regex",
-  ai = "ai",
-}
-interface Pattern {
-  type: PattrenType;
-  thingToLookFor: string;
-}
 
-interface Entry {
-  note: string;
-  scope: string[];
-  pattern: Pattern;
-}
-
-type JSON_CONFIG = { info: Entry[] };
-
-function writeToJSONFile(
-  context: vscode.ExtensionContext,
-  object: object,
-  filename: string
-) {
-  fs.writeFileSync(
-    path.join(context.extensionUri.fsPath, filename),
-    JSON.stringify(object)
-  );
-}
-
+// Read JSON file and extract object
 function readJsonFileAndExtractObject(
   context: vscode.ExtensionContext,
   filename: string
@@ -72,24 +49,22 @@ function readJsonFileAndExtractObject(
   }
 }
 
+// Get configuration from JSON file
 function getConfig(context: vscode.ExtensionContext): JSON_CONFIG {
   return readJsonFileAndExtractObject(context, "config.json");
 }
 
+// Add new information to the configuration
 function addToConfig(context: vscode.ExtensionContext, newInfo: Entry[]) {
   writeToJSONFile(context, { info: newInfo }, "config.json");
 }
 
+// Restart webview with updated content
 function restartWebView(panel: vscode.WebviewPanel, getContent: () => string) {
   panel.webview.html = getContent();
 }
 
-export function activate(context: vscode.ExtensionContext) {
-  console.log('Congratulations, your extension "vs" is now active!');
-}
-
-export function deactivate() {}
-
+// Generate the webview content with existing entries and new entry form
 function getWebviewContent(
   extensionUri: vscode.Uri,
   elements: Entry[]
@@ -98,6 +73,7 @@ function getWebviewContent(
   const styleUri = vscode.Uri.joinPath(extensionUri, "media", "style.css");
   const scriptSrc = scriptUri.with({ scheme: "vscode-resource" }).toString();
   const styleSrc = styleUri.with({ scheme: "vscode-resource" }).toString();
+
   let inputsHtml = "";
   elements.forEach((element, index) => {
     let scope = "";
@@ -109,9 +85,10 @@ function getWebviewContent(
       <div>
         <label for="element${index}">${element.note}</label>
         <input type="text" id="element${index}" class="${element.note}" name="element${index}">
-        <p>scope: ${scope}</p>
+        <p>Scope: ${scope}</p>
+        <p>Pattern Type: ${element.pattern.type}</p>
+        <p>Pattern: ${element.pattern.thingToLookFor}</p>
         <hr/>
-
       </div>
     `;
   });
@@ -133,9 +110,16 @@ function getWebviewContent(
       <h2>Add New Entry</h2>
       <form id="newEntryForm">
         <label for="newNote">Note:</label>
-        <input type="text" id="newNote" name="newNote">
+        <input type="text" id="newNote" name="newNote"><br/>
         <label for="newScope">Scope (comma-separated):</label>
-        <input type="text" id="newScope" name="newScope">
+        <input type="text" id="newScope" name="newScope"><br/>
+        <label for="newPatternType">Pattern Type:</label>
+        <select id="newPatternType" name="newPatternType">
+          <option value="regex">Regex</option>
+          <option value="ai">AI</option>
+        </select><br/>
+        <label for="newPattern">Pattern:</label>
+        <input type="text" id="newPattern" name="newPattern"><br/>
         <button type="button" onclick="addNewEntry()">Add Entry</button>
       </form>
       <script>
@@ -143,10 +127,14 @@ function getWebviewContent(
         function addNewEntry() {
           const note = document.getElementById('newNote').value;
           const scope = document.getElementById('newScope').value;
+          const patternType = document.getElementById('newPatternType').value;
+          const pattern = document.getElementById('newPattern').value;
           vscode.postMessage({
             command: 'addNewEntry',
             note: note,
-            scope: scope
+            scope: scope,
+            type: patternType,
+            pattern: pattern
           });
         }
       </script>
@@ -155,14 +143,15 @@ function getWebviewContent(
   `;
 }
 
+// Function to set up the UI and register commands
 export function SetUpUI(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand("vs.helloWorld", () => {
-    vscode.window.showInformationMessage("Hello World from vs code! 4");
+    vscode.window.showInformationMessage("Hello World from VS Code! 4");
   });
 
   context.subscriptions.push(disposable);
 
-  let disposable_2 = vscode.commands.registerCommand(
+  const disposable_2 = vscode.commands.registerCommand(
     "vs.generateApi",
     async () => {
       const editor = vscode.window.activeTextEditor;
@@ -179,8 +168,8 @@ export function SetUpUI(context: vscode.ExtensionContext) {
         }
 
         const workspaceFolder = workspaceFolders[0].uri.fsPath;
-
         const filePath = path.join(workspaceFolder, "sampleFile.txt");
+
         await vscode.window.showTextDocument(doc);
         vscode.window.showInformationMessage(
           `API generated for: ${doc.getText()}`
@@ -193,7 +182,7 @@ export function SetUpUI(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(disposable_2);
 
-  let dis_3 = vscode.commands.registerCommand(
+  const disposable_3 = vscode.commands.registerCommand(
     "vs.displayInteractablePage",
     () => {
       const panel = vscode.window.createWebviewPanel(
@@ -235,5 +224,5 @@ export function SetUpUI(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(dis_3);
+  context.subscriptions.push(disposable_3);
 }

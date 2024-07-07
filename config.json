@@ -1,1 +1,1 @@
-{"info":[{"note":"koko","scope":["omkok"]},{"note":"lplp","scope":["lplp"]},{"note":"l,olo","scope":["js.ts"],"pattern":{}},{"note":"lplp","scope":["lplp. lplp"],"pattern":{}},{"note":"koko","scope":["popo","momo"],"pattern":{}}]}
+{"info":[{"note":"js is bad","scope":["js","ts"],"pattern":{"type":"regex","thingToLookFor":"js"}}]}
