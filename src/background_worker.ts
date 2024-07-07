@@ -3,13 +3,21 @@ import { getConfig } from "./utils/config_interacter";
 import { JSON_CONFIG } from "./utils/types";
 import { PattrenType, Pattern, Entry } from "./utils/types";
 
+function getIndexOfLastDot(string: string) {
+  return string.lastIndexOf(".");
+}
+
 export function setupBackgroundWorker(context: vscode.ExtensionContext) {
   const config = getConfig(context);
 
   const saveEventListener = vscode.workspace.onDidSaveTextDocument(
     (document) => {
+      const fileExtension = document.uri.fsPath.substring(
+        getIndexOfLastDot(document.uri.fsPath) + 1
+      );
+
       const active_filters = config.info.filter((entry) => {
-        return !entry.scope.includes(document.languageId);
+        return entry.scope.includes(fileExtension);
       });
       vscode.window.showInformationMessage(
         JSON.stringify(active_filters.length)
