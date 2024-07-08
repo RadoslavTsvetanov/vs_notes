@@ -1,1 +1,14 @@
-{"info":[{"note":"js is bad","scope":["js","ts"],"pattern":{"type":"regex","thingToLookFor":"js"}}]}
+{
+  "info": [
+    {
+      "note": "js is bad",
+      "scope": ["js", "ts"],
+      "pattern": { "type": "regex", "thingToLookFor": "js" }
+    },
+    {
+      "note": "dont use console.log",
+      "scope": ["js", "ts"],
+      "pattern": { "type": "regex", "thingToLookFor": "1 1" }
+    }
+  ]
+}
