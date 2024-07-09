@@ -2,13 +2,13 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { writeToJSONFile } from "./utils/config_interacter";
-import { PattrenType, Pattern, JSON_CONFIG, Entry } from "./utils/types";
+import { PatternType, Pattern, JSON_CONFIG, Entry } from "./utils/types";
 
 // Parse message to extract Entry object
 function parseMsg(message: {
   command: string;
   note: string;
-  type: PattrenType;
+  type: PatternType;
   textArray: string[];
   scope: string;
   text: string;
@@ -164,7 +164,9 @@ export function SetUpUI(context: vscode.ExtensionContext) {
         const workspaceFolders = vscode.workspace.workspaceFolders;
 
         if (!workspaceFolders) {
-          throw new Error("No workspaces available");
+          console.log("No workspaces available");
+
+          return;
         }
 
         const workspaceFolder = workspaceFolders[0].uri.fsPath;
@@ -201,7 +203,7 @@ export function SetUpUI(context: vscode.ExtensionContext) {
         (message: {
           command: string;
           note: string;
-          type: PattrenType;
+          type: PatternType;
           textArray: string[];
           scope: string;
           text: string;

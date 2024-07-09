@@ -39,24 +39,36 @@ export function SetUpInputBox(context: vscode.ExtensionContext) {
   let counter = 0;
   let disposable = vscode.commands.registerCommand("vs.inFileEntry", () => {
     console.log("lo");
+
     const inputBox = vscode.window.createInputBox();
+    inputBox.value = ">";
     inputBox.onDidChangeValue((value) => {
+      // TODO fx bug where if you delete all input e,g, bacjspace a ton it stops working
       console.log("lppl" + counter);
       counter += 1;
       clearExtensionTDecorations();
+      console.log("poop", value.length, typeof value.length);
+      if (value.length === 0) {
+        console.log("does this run 1");
+        inputBox.value = ">";
+      }
+      console.log("does this run 2");
+
       logCurrentInput(value);
+
+      console.log("does this run 1");
     });
 
+    inputBox.prompt = " enter regex here";
     inputBox.onDidAccept(() => {
       const input = inputBox.value;
       vscode.window.showInformationMessage(`You entered: ${input}`);
-      inputBox.dispose();
+
       clearExtensionTDecorations();
     });
 
     inputBox.onDidHide(() => {
       console.log("hiding");
-      inputBox.dispose();
       clearExtensionTDecorations();
     });
 
@@ -67,14 +79,17 @@ export function SetUpInputBox(context: vscode.ExtensionContext) {
 }
 
 function logCurrentInput(input: string) {
-  console.log("kokokokoko");
-  console.log(decorations);
+  console.log("kokokokoko -> " + "(" + input + ")");
   const currentFileContent = vscode.window.activeTextEditor?.document.getText();
   const currentDocument = vscode.window.activeTextEditor?.document.uri.fsPath;
   if (currentFileContent === undefined || currentDocument === undefined) {
-    throw new Error("no file open");
+    console.log("No file content");
+    return;
   }
-
+  if (input.trim() === "") {
+    // ! dont touch this ever -> it makes sure there is always valid string passed to search using regex since there is some kind of strange va;ue which throws an error
+    return;
+  }
   const foundPositions = searchUsingRegex(currentFileContent, input);
   for (const posixPosition of foundPositions) {
     const id = 7;

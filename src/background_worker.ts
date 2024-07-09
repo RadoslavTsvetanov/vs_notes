@@ -30,7 +30,9 @@ class Decorations {
     this.decorations = [];
     const currentEditor = vscode.window.activeTextEditor;
     if (!currentEditor) {
+      console.log("No active text editor");
       throw new Error("No active text editor");
+      return;
     }
     this.editor = currentEditor;
   }
