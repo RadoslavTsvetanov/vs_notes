@@ -55,7 +55,10 @@ function getConfig(context: vscode.ExtensionContext): JSON_CONFIG {
 }
 
 // Add new information to the configuration
-function addToConfig(context: vscode.ExtensionContext, newInfo: Entry[]) {
+export function addToConfig(
+  context: vscode.ExtensionContext,
+  newInfo: Entry[]
+) {
   writeToJSONFile(context, { info: newInfo }, "config.json");
 }
 

@@ -1,3 +1,4 @@
+import { addToConfig } from "./management_pane";
 import * as vscode from "vscode";
 import {
   createPopupMessage,
@@ -35,13 +36,32 @@ function clearExtensionTDecorations() {
   clearHighlightDecorations(ColoringId);
 }
 
+function CreateInput(
+  onDidChange: (value: string) => void,
+  prompt: string,
+  onDidAccept: (value: string) => void
+) {
+  const inputBox = vscode.window.createInputBox();
+  inputBox.prompt = prompt;
+  inputBox.onDidAccept(() => {
+    onDidAccept(inputBox.value);
+
+    console.log("oooooo", inputBox.value);
+    inputBox.dispose();
+  });
+  inputBox.onDidChangeValue((val: string) => {
+    onDidChange(val);
+  });
+
+  inputBox.show();
+}
+
 export function SetUpInputBox(context: vscode.ExtensionContext) {
   let counter = 0;
   let disposable = vscode.commands.registerCommand("vs.inFileEntry", () => {
     console.log("lo");
 
     const inputBox = vscode.window.createInputBox();
-    inputBox.value = ">";
     inputBox.onDidChangeValue((value) => {
       // TODO fx bug where if you delete all input e,g, bacjspace a ton it stops working
       console.log("lppl" + counter);
@@ -50,7 +70,6 @@ export function SetUpInputBox(context: vscode.ExtensionContext) {
       console.log("poop", value.length, typeof value.length);
       if (value.length === 0) {
         console.log("does this run 1");
-        inputBox.value = ">";
       }
       console.log("does this run 2");
 
@@ -65,6 +84,41 @@ export function SetUpInputBox(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage(`You entered: ${input}`);
 
       clearExtensionTDecorations();
+
+      inputBox.dispose();
+      let scope = null;
+      // const ScopeInput = vscode.window.createInputBox();
+      // ScopeInput.prompt =
+      //   "enter for which file types you want this to apply: seperate by comma";
+
+      // ScopeInput.onDidAccept(() => {
+      //   console.log("file types ->" + ScopeInput.value);
+      //   const fileTypes = ScopeInput.value.split(",").map((x) => x.trim());
+      // });
+
+      // ScopeInput.show();
+
+      CreateInput(
+        (val: string) => {
+          console.log(val);
+        },
+        "enter for which file types you want this to apply: seperate by comma",
+        (val: string) => {
+          scope = val.split(",").map((x) => x.trim());
+          CreateInput(
+            (val: string) => {
+              console.log(val);
+              const fileTypes = val.split(",").map((x) => x.trim());
+            },
+            "enter a note",
+            (val: string) => {
+              console.log("note:", val);
+            }
+          );
+        }
+      );
+
+      console.log("lool", scope);
     });
 
     inputBox.onDidHide(() => {
