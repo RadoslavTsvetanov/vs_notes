@@ -26,6 +26,10 @@
       {
         "command": "vs.displayInteractablePage",
         "title": "display"
+      },
+      {
+        "command": "vs.inFileEntry",
+        "title": "inFileEntry"
       }
     ]
   },

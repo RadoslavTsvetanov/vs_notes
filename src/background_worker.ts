@@ -1,25 +1,47 @@
 import * as vscode from "vscode";
 import { getConfig } from "./utils/config_interacter";
-import { JSON_CONFIG } from "./utils/types";
-import { PattrenType, Pattern, Entry } from "./utils/types";
+import { JSON_CONFIG, Entry, PatternType } from "./utils/types";
+
+export type couldBeNumber = null | number;
+
+class Decoration {
+  private type: vscode.TextEditorDecorationType;
+  private id: couldBeNumber;
+
+  constructor(type: vscode.TextEditorDecorationType, id: couldBeNumber) {
+    this.type = type;
+    this.id = id;
+  }
+
+  getId() {
+    return this.id;
+  }
+
+  getType() {
+    return this.type;
+  }
+}
 
 class Decorations {
-  private decorations: vscode.TextEditorDecorationType[];
+  private decorations: Decoration[];
   private editor: vscode.TextEditor;
+
   constructor() {
     this.decorations = [];
-
     const currentEditor = vscode.window.activeTextEditor;
-    if (currentEditor === undefined) {
+    if (!currentEditor) {
       throw new Error("No active text editor");
     }
-
     this.editor = currentEditor;
   }
 
-  addDecoration(type: vscode.TextEditorDecorationType, range: vscode.Range) {
+  addDecoration(
+    type: vscode.TextEditorDecorationType,
+    range: vscode.Range,
+    id: couldBeNumber = null
+  ) {
     this.editor.setDecorations(type, [range]);
-    this.decorations.push(type);
+    this.decorations.push(new Decoration(type, id));
   }
 
   getAllDecorations() {
@@ -27,47 +49,67 @@ class Decorations {
   }
 
   clearDecorations() {
-    this.decorations.forEach((decoration) => decoration.dispose());
+    this.decorations.forEach((decoration) => decoration.getType().dispose());
     this.decorations = [];
   }
-}
 
-const decorations = new Decorations();
+  setEditor(editor: vscode.TextEditor) {
+    this.editor = editor;
+  }
+
+  clearDecoration(id: couldBeNumber) {
+    this.decorations = this.decorations.filter((decoration) => {
+      if (decoration.getId() === id) {
+        decoration.getType().dispose();
+        return false;
+      }
+      return true;
+    });
+  }
+}
+export const decorations = new Decorations();
+
+export function getFileExtension(path: string) {
+  return path.substring(getIndexOfLastDot(path) + 1);
+}
 
 function getIndexOfLastDot(string: string) {
   return string.lastIndexOf(".");
 }
 
-function highlightRange(start: number, end: number) {
-  const document = vscode.window.activeTextEditor?.document;
-  if (!document) {
+export function highlightRange(
+  start: number,
+  end: number,
+  id: couldBeNumber = null
+) {
+  const currentEditor = vscode.window.activeTextEditor;
+  if (!currentEditor) {
+    vscode.window.showErrorMessage("No active editor");
     return;
   }
+
   const decorationType = vscode.window.createTextEditorDecorationType({
     backgroundColor: "yellow",
   });
 
-  // Define the range to be highlighted
-  const startPos = document.positionAt(start);
-  const endPos = document.positionAt(end);
-
+  const startPos = currentEditor.document.positionAt(start);
+  const endPos = currentEditor.document.positionAt(end);
   const range = new vscode.Range(startPos, endPos);
 
-  // Apply the decoration to the current active editor
-  const activeEditor = vscode.window.activeTextEditor;
-  if (activeEditor) {
-    decorations.addDecoration(decorationType, range);
-  }
+  decorations.addDecoration(decorationType, range, id);
 }
-function createPopupMessage(
+
+export function createPopupMessage(
   message: string,
   startIndex: number,
-  endIndex: number
+  endIndex: number,
+  id: couldBeNumber = null
 ) {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     return;
   }
+
   const startPosition = editor.document.positionAt(startIndex);
   const endPosition = editor.document.positionAt(endIndex);
   const range = new vscode.Range(startPosition, endPosition);
@@ -77,77 +119,92 @@ function createPopupMessage(
       margin: "10px",
     },
   });
-  editor.setDecorations(decorationType, [range]);
 
-  decorations.addDecoration(decorationType, range);
+  decorations.addDecoration(decorationType, range, id);
 }
+
+function clearDecorations() {
+  decorations.clearDecorations();
+}
+
 export function setupBackgroundWorker(context: vscode.ExtensionContext) {
   const saveEventListener = vscode.workspace.onDidSaveTextDocument(
     (document) => {
+      clearDecorations();
+
       const config = getConfig(context);
-
-      const fileExtension = document.uri.fsPath.substring(
-        getIndexOfLastDot(document.uri.fsPath) + 1
+      const fileExtension = getFileExtension(document.uri.fsPath);
+      const activeFilters = config.info.filter((entry) =>
+        entry.scope.includes(fileExtension)
       );
 
-      const active_filters = config.info.filter((entry) => {
-        return entry.scope.includes(fileExtension);
-      });
       vscode.window.showInformationMessage(
-        JSON.stringify(active_filters.length)
+        `Found ${activeFilters.length} filters`
       );
-      checkFile(document.getText(), active_filters);
+
+      checkFile(document.getText(), activeFilters);
+    }
+  );
+
+  const editorChangeListener = vscode.window.onDidChangeActiveTextEditor(
+    (editor) => {
+      if (editor) {
+        decorations.setEditor(editor);
+      }
     }
   );
 
   context.subscriptions.push(saveEventListener);
+  context.subscriptions.push(editorChangeListener);
 }
 
 function checkFile(fileContent: string, filters: Entry[]) {
   for (const entry of filters) {
-    scanForString(fileContent, entry);
+    searchForEntry(fileContent, entry);
   }
 }
-function searchUsingRegex(stringToBeSearched: string, regexString: string) {
+
+export function searchUsingRegex(
+  stringToBeSearched: string,
+  regexString: string
+) {
   const regex = new RegExp(regexString, "g");
   let matches;
   const matchPositions: { start: number; end: number }[] = [];
 
-  // Find all matches and their positions
   while ((matches = regex.exec(stringToBeSearched)) !== null) {
     matchPositions.push({ start: matches.index, end: regex.lastIndex });
   }
 
-  console.log(matchPositions);
-
   if (matchPositions.length > 0) {
     vscode.window.showInformationMessage(
-      `Found '${regexString}' in '${stringToBeSearched}'`
+      `Found '${regexString}' in the document`
     );
   } else {
     vscode.window.showInformationMessage(
-      `No matches found for '${regexString}' in '${stringToBeSearched}'`
+      `No matches found for '${regexString}'`
     );
   }
 
   return matchPositions;
 }
+
 function searchUsingAI(stringToBeSearched: string, thingToLookFor: string) {
-  vscode.window.showInformationMessage("not implemented yet :)");
+  vscode.window.showInformationMessage("Not implemented yet :)");
 }
 
-function scanForString(stringToBeSearched: string, entry: Entry) {
-  if (entry.pattern.type === PattrenType.regex) {
-    const coordinatesOfMAtched = searchUsingRegex(
+export function searchForEntry(stringToBeSearched: string, entry: Entry) {
+  if (entry.pattern.type === PatternType.regex) {
+    const matchCoordinates = searchUsingRegex(
       stringToBeSearched,
       entry.pattern.thingToLookFor
     );
-    for (const match of coordinatesOfMAtched) {
-      console.log(`Found '${entry.pattern.thingToLookFor}' at ${match.start}`);
+
+    for (const match of matchCoordinates) {
       highlightRange(match.start, match.end);
       createPopupMessage(entry.note, match.start, match.end);
     }
-  } else if (entry.pattern.type === PattrenType.ai) {
+  } else if (entry.pattern.type === PatternType.ai) {
     searchUsingAI(stringToBeSearched, entry.pattern.thingToLookFor);
   }
 }

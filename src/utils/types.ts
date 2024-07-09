@@ -4,11 +4,11 @@ export interface Entry {
   scope: string[];
   pattern: Pattern;
 }
-export enum PattrenType {
+export enum PatternType {
   regex = "regex",
   ai = "ai",
 }
 export interface Pattern {
-  type: PattrenType;
+  type: PatternType;
   thingToLookFor: string;
 }
