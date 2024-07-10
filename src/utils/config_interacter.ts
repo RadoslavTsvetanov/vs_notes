@@ -3,6 +3,11 @@ import * as path from "path";
 import * as fs from "fs";
 
 import { Pattern, JSON_CONFIG, Entry } from "./types";
+
+export function getConfigPath(context: vscode.ExtensionContext) {
+  return path.join(context.extensionUri.fsPath, "config.json");
+}
+
 export function writeToJSONFile( // writes the config to the folder where the extension source code is saved
   context: vscode.ExtensionContext,
   object: object,

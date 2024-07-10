@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { writeToJSONFile } from "./utils/config_interacter";
+import { writeToJSONFile, getConfigPath } from "./utils/config_interacter";
 import { PatternType, Pattern, JSON_CONFIG, Entry } from "./utils/types";
 
 // Parse message to extract Entry object
@@ -90,11 +90,20 @@ function restartWebView(panel: vscode.WebviewPanel, getContent: () => string) {
 
 // Generate the webview content with existing entries and new entry form
 function getWebviewContent(
-  extensionUri: vscode.Uri,
+  context: vscode.ExtensionContext,
   elements: Entry[]
 ): string {
-  const scriptUri = vscode.Uri.joinPath(extensionUri, "media", "script.js");
-  const styleUri = vscode.Uri.joinPath(extensionUri, "media", "style.css");
+  const configPath = getConfigPath(context);
+  const scriptUri = vscode.Uri.joinPath(
+    context.extensionUri,
+    "media",
+    "script.js"
+  );
+  const styleUri = vscode.Uri.joinPath(
+    context.extensionUri,
+    "media",
+    "style.css"
+  );
   const scriptSrc = scriptUri.with({ scheme: "vscode-resource" }).toString();
   const styleSrc = styleUri.with({ scheme: "vscode-resource" }).toString();
 
@@ -128,6 +137,7 @@ function getWebviewContent(
     </head>
     <body>
       <h1>Text Fields for Array Elements</h1>
+      <div>if you wanna view and edit the raw config here is the path: ${configPath} </div>
       <form id="myForm">
         ${inputsHtml}
       </form>
@@ -221,7 +231,8 @@ export function SetUpUI(context: vscode.ExtensionContext) {
       );
 
       let info = getConfig(context).info;
-      panel.webview.html = getWebviewContent(context.extensionUri, info);
+      const filepath = getConfigPath(context);
+      panel.webview.html = getWebviewContent(context, info);
 
       panel.webview.onDidReceiveMessage(
         (message: {
@@ -239,7 +250,7 @@ export function SetUpUI(context: vscode.ExtensionContext) {
               info.push(newEntry);
               addToConfig(context, info);
               restartWebView(panel, () =>
-                getWebviewContent(context.extensionUri, getConfig(context).info)
+                getWebviewContent(context, getConfig(context).info)
               );
               return;
           }
