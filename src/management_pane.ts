@@ -54,7 +54,28 @@ function getConfig(context: vscode.ExtensionContext): JSON_CONFIG {
   return readJsonFileAndExtractObject(context, "config.json");
 }
 
-// Add new information to the configuration
+/* 
+
+@param {entry[]} newEntries - Array of new entries to be added to the config
+
+*/
+export function addEntriesToConfig(
+  context: vscode.ExtensionContext,
+  newEntries: Entry[]
+) {
+  const config = getConfig(context);
+  const newEntriesWithId = newEntries.map((entry) => {
+    const newId = Math.floor(Math.random() * 1000000);
+    return { ...entry, id: newId };
+  });
+
+  const updatedConfig = {
+    info: [...config.info, ...newEntriesWithId],
+  };
+
+  writeToJSONFile(context, updatedConfig, "config.json");
+}
+
 export function addToConfig(
   context: vscode.ExtensionContext,
   newInfo: Entry[]

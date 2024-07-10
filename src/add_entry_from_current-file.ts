@@ -1,4 +1,4 @@
-import { addToConfig } from "./management_pane";
+import { addEntriesToConfig, addToConfig } from "./management_pane";
 import * as vscode from "vscode";
 import {
   createPopupMessage,
@@ -7,18 +7,19 @@ import {
   searchForEntry,
   searchUsingRegex,
 } from "./background_worker";
-import { PatternType } from "./utils/types";
+import { PatternType, Entry } from "./utils/types";
 import type { couldBeNumber } from "./background_worker";
+import { decorations } from "./background_worker";
+
 let TextDocId: couldBeNumber = null;
 let ColoringId: couldBeNumber = null;
-import { decorations } from "./background_worker";
 
 function clearExtensionTextDecorations(textDecorationsId: couldBeNumber) {
   if (textDecorationsId === null) {
     return;
   }
 
-  decorations.clearDecoration(TextDocId);
+  decorations.clearDecoration(textDecorationsId);
   TextDocId = null;
 }
 
@@ -27,11 +28,11 @@ function clearHighlightDecorations(textDecorationsId: couldBeNumber) {
     return;
   }
 
-  decorations.clearDecoration(ColoringId);
+  decorations.clearDecoration(textDecorationsId);
   ColoringId = null;
 }
 
-function clearExtensionTDecorations() {
+function clearExtensionDecorations() {
   clearExtensionTextDecorations(TextDocId);
   clearHighlightDecorations(ColoringId);
 }
@@ -45,8 +46,6 @@ function CreateInput(
   inputBox.prompt = prompt;
   inputBox.onDidAccept(() => {
     onDidAccept(inputBox.value);
-
-    console.log("oooooo", inputBox.value);
     inputBox.dispose();
   });
   inputBox.onDidChangeValue((val: string) => {
@@ -59,92 +58,66 @@ function CreateInput(
 export function SetUpInputBox(context: vscode.ExtensionContext) {
   let counter = 0;
   let disposable = vscode.commands.registerCommand("vs.inFileEntry", () => {
-    console.log("lo");
-
-    const inputBox = vscode.window.createInputBox();
-    inputBox.onDidChangeValue((value) => {
-      // TODO fx bug where if you delete all input e,g, bacjspace a ton it stops working
-      console.log("lppl" + counter);
-      counter += 1;
-      clearExtensionTDecorations();
-      console.log("poop", value.length, typeof value.length);
-      if (value.length === 0) {
-        console.log("does this run 1");
-      }
-      console.log("does this run 2");
-
-      logCurrentInput(value);
-
-      console.log("does this run 1");
-    });
-
-    inputBox.prompt = " enter regex here";
-    inputBox.onDidAccept(() => {
-      const input = inputBox.value;
-      vscode.window.showInformationMessage(`You entered: ${input}`);
-
-      clearExtensionTDecorations();
-
-      inputBox.dispose();
-      let scope = null;
-      // const ScopeInput = vscode.window.createInputBox();
-      // ScopeInput.prompt =
-      //   "enter for which file types you want this to apply: seperate by comma";
-
-      // ScopeInput.onDidAccept(() => {
-      //   console.log("file types ->" + ScopeInput.value);
-      //   const fileTypes = ScopeInput.value.split(",").map((x) => x.trim());
-      // });
-
-      // ScopeInput.show();
-
-      CreateInput(
-        (val: string) => {
-          console.log(val);
-        },
-        "enter for which file types you want this to apply: seperate by comma",
-        (val: string) => {
-          scope = val.split(",").map((x) => x.trim());
-          CreateInput(
-            (val: string) => {
-              console.log(val);
-              const fileTypes = val.split(",").map((x) => x.trim());
-            },
-            "enter a note",
-            (val: string) => {
-              console.log("note:", val);
-            }
-          );
+    const newEntry: Entry = {
+      note: "",
+      scope: [],
+      pattern: { type: PatternType.regex, thingToLookFor: "" },
+    };
+    CreateInput(
+      (value: string) => {
+        clearExtensionDecorations();
+        if (value.length === 0) {
+          // np input string crashes the regex eval
+          return;
         }
-      );
+        logCurrentInput(value);
+      },
+      "Enter regex here",
+      (value: string) => {
+        const input = value;
+        vscode.window.showInformationMessage(`You entered: ${input}`);
+        clearExtensionDecorations();
+        newEntry.pattern.thingToLookFor = input;
+        newEntry.pattern.type = PatternType.regex;
 
-      console.log("lool", scope);
-    });
-
-    inputBox.onDidHide(() => {
-      console.log("hiding");
-      clearExtensionTDecorations();
-    });
-
-    inputBox.show();
+        CreateInput(
+          (val: string) => {},
+          "Enter file types (comma-separated)",
+          (val: string) => {
+            let scope = val.split(",").map((x) => x.trim());
+            newEntry.scope = scope;
+            CreateInput(
+              (val: string) => {},
+              "Enter a note",
+              (val: string) => {
+                newEntry.note = val;
+                addEntriesToConfig(context, [newEntry]); // Assuming this function adds the new entry to the config
+                vscode.window.showInformationMessage(
+                  "New entry added to config"
+                );
+              }
+            );
+          }
+        );
+      }
+    );
   });
 
   context.subscriptions.push(disposable);
 }
 
-function logCurrentInput(input: string) {
-  console.log("kokokokoko -> " + "(" + input + ")");
+async function logCurrentInput(input: string) {
   const currentFileContent = vscode.window.activeTextEditor?.document.getText();
-  const currentDocument = vscode.window.activeTextEditor?.document.uri.fsPath;
-  if (currentFileContent === undefined || currentDocument === undefined) {
+  if (currentFileContent === undefined) {
     console.log("No file content");
     return;
   }
   if (input.trim() === "") {
-    // ! dont touch this ever -> it makes sure there is always valid string passed to search using regex since there is some kind of strange va;ue which throws an error
     return;
   }
-  const foundPositions = searchUsingRegex(currentFileContent, input);
+
+  const foundPositions = await searchUsingRegex(currentFileContent, input);
+
   for (const posixPosition of foundPositions) {
     const id = 7;
     highlightRange(posixPosition.start, posixPosition.end, id);
@@ -152,7 +125,7 @@ function logCurrentInput(input: string) {
 
     const newId = 10;
     createPopupMessage(
-      "this was found from your input field",
+      "This was found from your input field",
       posixPosition.start,
       posixPosition.end,
       newId

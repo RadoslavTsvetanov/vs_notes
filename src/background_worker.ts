@@ -170,22 +170,16 @@ export function searchUsingRegex(
   stringToBeSearched: string,
   regexString: string
 ) {
-  const regex = new RegExp(regexString, "g");
-  let matches;
   const matchPositions: { start: number; end: number }[] = [];
+  try {
+    const regex = new RegExp(regexString, "g");
+    let matches;
 
-  while ((matches = regex.exec(stringToBeSearched)) !== null) {
-    matchPositions.push({ start: matches.index, end: regex.lastIndex });
-  }
-
-  if (matchPositions.length > 0) {
-    vscode.window.showInformationMessage(
-      `Found '${regexString}' in the document`
-    );
-  } else {
-    vscode.window.showInformationMessage(
-      `No matches found for '${regexString}'`
-    );
+    while ((matches = regex.exec(stringToBeSearched)) !== null) {
+      matchPositions.push({ start: matches.index, end: regex.lastIndex });
+    }
+  } catch (e) {
+    console.log("err", e);
   }
 
   return matchPositions;
