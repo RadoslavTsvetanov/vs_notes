@@ -56,7 +56,7 @@ function getConfig(context: vscode.ExtensionContext): JSON_CONFIG {
 
 /* 
 
-@param {entry[]} newEntries - Array of new entries to be added to the config
+  @param {entry[]} newEntries - Array of new entries to be added to the config
 
 */
 export function addEntriesToConfig(
@@ -88,7 +88,6 @@ function restartWebView(panel: vscode.WebviewPanel, getContent: () => string) {
   panel.webview.html = getContent();
 }
 
-// Generate the webview content with existing entries and new entry form
 function getWebviewContent(
   context: vscode.ExtensionContext,
   elements: Entry[]
@@ -177,7 +176,6 @@ function getWebviewContent(
   `;
 }
 
-// Function to set up the UI and register commands
 export function SetUpUI(context: vscode.ExtensionContext) {
   const disposable = vscode.commands.registerCommand("vs.helloWorld", () => {
     vscode.window.showInformationMessage("Hello World from VS Code! 4");
