@@ -44,6 +44,27 @@ if(getTime() > 8 p.m) {
 }
 ```
 
+Here is a full example
+
+```js
+import { customSearch } from "./utils/smells_finders";
+
+const stringToExecute = `     
+function searchString(input) {
+      const positions = [];
+      let match;
+      const regex = /o/g;
+      while (match = regex.exec(input)) {
+        positions.push({ start: match.index, end: match.index + 1 });
+      }
+      return positions;
+    }
+
+`;
+
+console.log(customSearch("hi this is me o o o o o", stringToExecute));
+```
+
 ## Where its useful
 
 - Ensuring standards in a codebase (for example all the things that are syntactically correct but you would want your team members to use)

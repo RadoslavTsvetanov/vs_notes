@@ -31,7 +31,7 @@ export function customSearch(
 ): Positions {
   try {
     const customFunction = eval(`(${customFunctionToExecute})`);
-
+    console.log("customFunction", customFunction);
     if (typeof customFunction !== "function") {
       throw new Error("The provided custom function is not valid.");
     }

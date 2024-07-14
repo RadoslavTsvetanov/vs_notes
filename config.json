@@ -24,6 +24,19 @@
       "scope": ["js", "ts"],
       "pattern": { "type": "regex", "thingToLookFor": "JSON" },
       "id": 88843
+    },
+    {
+      "note": "no lolos",
+      "scope": ["js", "ts"],
+      "pattern": { "type": "regex", "thingToLookFor": "lolo" }
+    },
+    {
+      "note": "o o o  o",
+      "scope": ["js", "ts"],
+      "pattern": {
+        "type": "custom",
+        "thingToLookFor": "function searchString(input) {\n      const positions = [];\n      let match;\n      const regex = /o/g;\n      while (match = regex.exec(input)) {\n        positions.push({ start: match.index, end: match.index + 1 });\n      }\n      return positions;\n    }\n"
+      }
     }
   ]
 }

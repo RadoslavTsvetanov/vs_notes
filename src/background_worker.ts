@@ -1,7 +1,11 @@
 import * as vscode from "vscode";
 import { getConfig } from "./utils/config_interacter";
 import { JSON_CONFIG, Entry, PatternType } from "./utils/types";
-import { searchUsingRegex, searchUsingAI } from "./utils/smells_finders";
+import {
+  searchUsingRegex,
+  searchUsingAI,
+  customSearch,
+} from "./utils/smells_finders";
 
 export type couldBeNumber = null | number;
 class Decoration {
@@ -167,6 +171,7 @@ function checkFile(fileContent: string, filters: Entry[]) {
 }
 
 export function searchForEntry(stringToBeSearched: string, entry: Entry) {
+  // TODO: make it so that instead of implementing the logic for each type independently
   if (entry.pattern.type === PatternType.regex) {
     const matchCoordinates = searchUsingRegex(
       stringToBeSearched,
@@ -179,5 +184,15 @@ export function searchForEntry(stringToBeSearched: string, entry: Entry) {
     }
   } else if (entry.pattern.type === PatternType.ai) {
     searchUsingAI(stringToBeSearched, entry.pattern.thingToLookFor);
+  } else if (entry.pattern.type === PatternType.custom) {
+    const matches = customSearch(
+      stringToBeSearched,
+      entry.pattern.thingToLookFor
+    );
+
+    for (const match of matches) {
+      highlightRange(match.start, match.end);
+      createPopupMessage(entry.note, match.start, match.end);
+    }
   }
 }

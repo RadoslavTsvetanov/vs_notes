@@ -127,52 +127,54 @@ function getWebviewContent(
 
   return `
     <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link href="${styleSrc}" rel="stylesheet">
-      <title>Form Example</title>
-    </head>
-    <body>
-      <h1>Text Fields for Array Elements</h1>
-      <div>if you wanna view and edit the raw config here is the path: ${configPath} </div>
-      <form id="myForm">
-        ${inputsHtml}
-      </form>
-      <h2>Add New Entry</h2>
-      <form id="newEntryForm">
-        <label for="newNote">Note:</label>
-        <input type="text" id="newNote" name="newNote"><br/>
-        <label for="newScope">Scope (comma-separated):</label>
-        <input type="text" id="newScope" name="newScope"><br/>
-        <label for="newPatternType">Pattern Type:</label>
-        <select id="newPatternType" name="newPatternType">
-          <option value="regex">Regex</option>
-          <option value="ai">AI</option>
-        </select><br/>
-        <label for="newPattern">Pattern:</label>
-        <input type="text" id="newPattern" name="newPattern"><br/>
-        <button type="button" onclick="addNewEntry()">Add Entry</button>
-      </form>
-      <script>
-        const vscode = acquireVsCodeApi();
-        function addNewEntry() {
-          const note = document.getElementById('newNote').value;
-          const scope = document.getElementById('newScope').value;
-          const patternType = document.getElementById('newPatternType').value;
-          const pattern = document.getElementById('newPattern').value;
-          vscode.postMessage({
-            command: 'addNewEntry',
-            note: note,
-            scope: scope,
-            type: patternType,
-            pattern: pattern
-          });
-        }
-      </script>
-    </body>
-    </html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="${styleSrc}" rel="stylesheet">
+  <title>Form Example</title>
+</head>
+<body>
+  <h1>Text Fields for Array Elements</h1>
+  <div>if you wanna view and edit the raw config here is the path: ${configPath} </div>
+  <form id="myForm">
+    ${inputsHtml}
+  </form>
+  <h2>Add New Entry</h2>
+  <form id="newEntryForm">
+    <label for="newNote">Note:</label>
+    <input type="text" id="newNote" name="newNote"><br/>
+    <label for="newScope">Scope (comma-separated):</label>
+    <input type="text" id="newScope" name="newScope"><br/>
+    <label for="newPatternType">Pattern Type:</label>
+    <select id="newPatternType" name="newPatternType">
+      <option value="regex">Regex</option>
+      <option value="ai">AI</option>
+      <option value="custom">Custom</option>
+    </select><br/>
+    <label for="newPattern">Pattern:</label>
+    <textarea id="newPattern" name="newPattern" rows="4" cols="50"></textarea><br/>
+    <button type="button" onclick="addNewEntry()">Add Entry</button>
+  </form>
+  <script>
+    const vscode = acquireVsCodeApi();
+    function addNewEntry() {
+      const note = document.getElementById('newNote').value;
+      const scope = document.getElementById('newScope').value;
+      const patternType = document.getElementById('newPatternType').value;
+      const pattern = document.getElementById('newPattern').value;
+      vscode.postMessage({
+        command: 'addNewEntry',
+        note: note,
+        scope: scope,
+        type: patternType,
+        pattern: pattern
+      });
+    }
+  </script>
+</body>
+</html>
+
   `;
 }
 
@@ -229,7 +231,6 @@ export function SetUpUI(context: vscode.ExtensionContext) {
       );
 
       let info = getConfig(context).info;
-      const filepath = getConfigPath(context);
       panel.webview.html = getWebviewContent(context, info);
 
       panel.webview.onDidReceiveMessage(
