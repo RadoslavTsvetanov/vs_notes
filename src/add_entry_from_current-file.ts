@@ -5,12 +5,12 @@ import {
   getFileExtension,
   highlightRange,
   searchForEntry,
-  searchUsingRegex,
 } from "./background_worker";
 import { PatternType, Entry } from "./utils/types";
 import type { couldBeNumber } from "./background_worker";
 import { decorations } from "./background_worker";
 
+import { searchUsingRegex } from "./utils/smells_finders";
 let TextDocId: couldBeNumber = null;
 let ColoringId: couldBeNumber = null;
 

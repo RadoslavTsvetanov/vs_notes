@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import { getConfig } from "./utils/config_interacter";
 import { JSON_CONFIG, Entry, PatternType } from "./utils/types";
+import { searchUsingRegex, searchUsingAI } from "./utils/smells_finders";
 
 export type couldBeNumber = null | number;
-
 class Decoration {
   private type: vscode.TextEditorDecorationType;
   private id: couldBeNumber;
@@ -164,29 +164,6 @@ function checkFile(fileContent: string, filters: Entry[]) {
   for (const entry of filters) {
     searchForEntry(fileContent, entry);
   }
-}
-
-export function searchUsingRegex(
-  stringToBeSearched: string,
-  regexString: string
-) {
-  const matchPositions: { start: number; end: number }[] = [];
-  try {
-    const regex = new RegExp(regexString, "g");
-    let matches;
-
-    while ((matches = regex.exec(stringToBeSearched)) !== null) {
-      matchPositions.push({ start: matches.index, end: regex.lastIndex });
-    }
-  } catch (e) {
-    console.log("err", e);
-  }
-
-  return matchPositions;
-}
-
-function searchUsingAI(stringToBeSearched: string, thingToLookFor: string) {
-  vscode.window.showInformationMessage("Not implemented yet :)");
 }
 
 export function searchForEntry(stringToBeSearched: string, entry: Entry) {

@@ -7,6 +7,7 @@ export interface Entry {
 export enum PatternType {
   regex = "regex",
   ai = "ai",
+  custom = "custom",
 }
 export interface Pattern {
   type: PatternType;
