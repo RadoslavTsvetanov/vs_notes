@@ -82,7 +82,7 @@ console.log(customSearch("hi this is me o o o o o", stringToExecute));
             search_tye: hardcoded string (this could be a regex too),
            thing_to_search_for: "consolelog"
               },
-    scope: ["*.js"] // only for js files
+    scope: ["js"] // only for js files
  }
 ```
 
@@ -93,24 +93,8 @@ description: "using for in synta in the wrong lang"
 smell: {
 search_type: regex
 thing_to_sesrch_for: r'\bfor\b,
-scope: ["*.ts","*.js"]
+scope: ["ts","js"]
 }
 
 }
-```
-
-```llvm
-{
-name: "not closing file",
-description: "checks if you have opened a file and not closed it"
-smell: {search_type: ai,thing_to_search_for: "is there anywhere openinga file without closing" // this will be the prompt for the ai
-scope: ["*.*"] // all files
-
-}
-}
-```
-
-```llvm
-scope: ["main.*"] // flies that have main
-scope : ["main.js"] // only min.ts file
 ```
